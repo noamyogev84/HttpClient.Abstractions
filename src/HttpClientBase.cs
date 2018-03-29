@@ -9,25 +9,25 @@ using Newtonsoft.Json;
 
 namespace Http.Abstractions
 {
-    public class BasicHttpClient : IHttpClient
+    public class HttpClientBase : IHttpClient
     {
         private static HttpClient _client;
 
-        public async Task<HttpResponseMessage> GetAsync(string requestUri) => await _client.GetAsync(requestUri);
+        public virtual async Task<HttpResponseMessage> GetAsync(string requestUri) => await _client.GetAsync(requestUri);
         
-        public async Task<HttpResponseMessage> PostAsync<TContent>(string requestUri, TContent content)
+        public virtual async Task<HttpResponseMessage> PostAsync<TContent>(string requestUri, TContent content)
         {
             var serialized = JsonConvert.SerializeObject(content);
             return await _client.PostAsync(requestUri, new StringContent(serialized));
         }
 
-        public async Task<HttpResponseMessage> PutAsync<TContent>(string requestUri, TContent content)
+        public virtual async Task<HttpResponseMessage> PutAsync<TContent>(string requestUri, TContent content)
         {
             var serialized = JsonConvert.SerializeObject(content);
             return await _client.PutAsync(requestUri, new StringContent(serialized));
         }
 
-        public async Task<HttpResponseMessage> PatchAsync<TContent>(string requestUri, TContent content)
+        public virtual async Task<HttpResponseMessage> PatchAsync<TContent>(string requestUri, TContent content)
         {
             var serialized = JsonConvert.SerializeObject(content);
             var request = new HttpRequestMessage(new HttpMethod("PATCH"), requestUri)
@@ -38,13 +38,17 @@ namespace Http.Abstractions
             return await _client.SendAsync(request);
         }
 
-        public async Task<HttpResponseMessage> DeleteAsync(string requestUri) => await _client.DeleteAsync(requestUri);
+        public virtual async Task<HttpResponseMessage> DeleteAsync(string requestUri) => await _client.DeleteAsync(requestUri);
 
-        public BasicHttpClient(string baseAddress)
+        public HttpClientBase(string baseAddress)
         {
             _client = new HttpClient();
             _client.BaseAddress = new Uri(baseAddress);
-            _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        }
+
+        public HttpClientBase(string baseAddress, IEnumerable<MediaTypeWithQualityHeaderValue> headers) : this(baseAddress)
+        {
+            headers.ToList().ForEach(h => _client.DefaultRequestHeaders.Accept.Add(h));
         }
 
 
