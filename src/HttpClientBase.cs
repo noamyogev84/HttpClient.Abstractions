@@ -9,46 +9,80 @@ using Newtonsoft.Json;
 
 namespace Http.Abstractions
 {
-    public class HttpClientBase : IHttpClient
+    public class HttpClientBase : HttpClient, IHttpClient
     {
-        private static HttpClient _client;
-
-        public virtual async Task<HttpResponseMessage> GetAsync(string requestUri) => await _client.GetAsync(requestUri);
-        
-        public virtual async Task<HttpResponseMessage> PostAsync<TContent>(string requestUri, TContent content)
+        public HttpClientBase(string baseAddress) : base()
         {
-            var serialized = JsonConvert.SerializeObject(content);
-            return await _client.PostAsync(requestUri, new StringContent(serialized));
-        }
-
-        public virtual async Task<HttpResponseMessage> PutAsync<TContent>(string requestUri, TContent content)
-        {
-            var serialized = JsonConvert.SerializeObject(content);
-            return await _client.PutAsync(requestUri, new StringContent(serialized));
-        }
-
-        public virtual async Task<HttpResponseMessage> PatchAsync<TContent>(string requestUri, TContent content)
-        {
-            var serialized = JsonConvert.SerializeObject(content);
-            var request = new HttpRequestMessage(new HttpMethod("PATCH"), requestUri)
-            {
-                Content = new StringContent(serialized)
-            };
-            
-            return await _client.SendAsync(request);
-        }
-
-        public virtual async Task<HttpResponseMessage> DeleteAsync(string requestUri) => await _client.DeleteAsync(requestUri);
-
-        public HttpClientBase(string baseAddress)
-        {
-            _client = new HttpClient();
-            _client.BaseAddress = new Uri(baseAddress);
+            BaseAddress = new Uri(baseAddress);
         }
 
         public HttpClientBase(string baseAddress, IEnumerable<MediaTypeWithQualityHeaderValue> headers) : this(baseAddress)
         {
-            headers.ToList().ForEach(h => _client.DefaultRequestHeaders.Accept.Add(h));
+            headers.ToList().ForEach(h => DefaultRequestHeaders.Accept.Add(h));
+        }
+
+        public virtual async Task<TResult> GetAsync<TResult>(string requestUri)
+        {
+            return await HandleHttp<TResult>(async () =>
+            {
+                return await GetAsync(requestUri);
+            });
+        }
+        
+        public virtual async Task<TResult> PostAsync<TContent, TResult>(string requestUri, TContent content)
+        {
+            return await HandleHttp<TResult>(async () =>
+            {
+                var serialized = JsonConvert.SerializeObject(content);
+                return await PostAsync(requestUri, new StringContent(serialized));
+            });
+        }
+
+        public virtual async Task<TResult> PutAsync<TContent, TResult>(string requestUri, TContent content)
+        {
+            return await HandleHttp<TResult>(async () =>
+            {
+                var serialized = JsonConvert.SerializeObject(content);
+                return await PutAsync(requestUri, new StringContent(serialized));
+            });            
+        }
+
+        public virtual async Task<TResult> PatchAsync<TContent, TResult>(string requestUri, TContent content)
+        {
+            return await HandleHttp<TResult>(async () =>
+            {
+                var serialized = JsonConvert.SerializeObject(content);
+                var request = new HttpRequestMessage(new HttpMethod("PATCH"), requestUri)
+                {
+                    Content = new StringContent(serialized)
+                };
+
+                return await SendAsync(request);
+            });           
+        }
+
+        public virtual async Task<TResult> DeleteAsync<TResult>(string requestUri)
+        {
+            return await HandleHttp<TResult>(async () =>
+            {
+                return await DeleteAsync(requestUri);
+            });
+        }
+                   
+        protected virtual async Task<TResult> HandleHttp<TResult>(Func<Task<HttpResponseMessage>> func)
+        {
+            var result = default(TResult);
+            try
+            {
+                var httpTask = await func();
+                result = await httpTask.Content.ReadAsStringAsync()
+                    .ContinueWith(t => JsonConvert.DeserializeObject<TResult>(t.Result));
+            }
+            catch(Exception ex)
+            {
+                //TODO: handle
+            }
+            return result;
         }
 
 
