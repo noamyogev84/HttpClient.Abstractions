@@ -7,9 +7,6 @@ namespace Http.Abstractions
 {
     public class HttpClientException : Exception
     {
-        public HttpClientException(string message, Exception innerException):base(message,innerException)
-        {
-            
-        }
+        public HttpClientException(string message, Exception innerException) : base(message, innerException) { }
     }
 }
