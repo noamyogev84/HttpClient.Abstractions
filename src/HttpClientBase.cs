@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -11,14 +11,16 @@ namespace Http.Abstractions
 {
     public class HttpClientBase : HttpClient, IHttpClient
     {
-        public HttpClientBase(string baseAddress) : base()
+            
+        public HttpClientBase(string baseAddress = null)
         {
-            BaseAddress = new Uri(baseAddress);
+            if(!string.IsNullOrEmpty(baseAddress))
+                BaseAddress = new Uri(baseAddress);
         }
 
-        public HttpClientBase(string baseAddress, IEnumerable<MediaTypeWithQualityHeaderValue> headers) : this(baseAddress)
+        public HttpClientBase(string baseAddress, IEnumerable<MediaTypeWithQualityHeaderValue> headers = null) : this(baseAddress)
         {
-            headers.ToList().ForEach(h => DefaultRequestHeaders.Accept.Add(h));
+            headers?.ToList().ForEach(h => DefaultRequestHeaders.Accept.Add(h));
         }
 
         public virtual async Task<TResult> GetAsync<TResult>(string requestUri)
@@ -80,7 +82,7 @@ namespace Http.Abstractions
             }
             catch(Exception ex)
             {
-                //TODO: handle
+                throw new HttpClientException($"{nameof(HandleHttp)} caught an unexpected excpetion", ex);
             }
             return result;
         }
