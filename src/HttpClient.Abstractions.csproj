@@ -73,8 +73,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Exceptions\HttpClientException.cs" />
     <Compile Include="HttpClientBase.cs" />
+    <Compile Include="HttpClientException.cs" />
     <Compile Include="IHttpClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

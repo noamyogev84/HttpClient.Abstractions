@@ -73,7 +73,7 @@ namespace Http.Abstractions
                    
         protected virtual async Task<TResult> HandleHttp<TResult>(Func<Task<HttpResponseMessage>> func)
         {
-            var result = default(TResult);
+            TResult result;
             try
             {
                 var httpTask = await func();
