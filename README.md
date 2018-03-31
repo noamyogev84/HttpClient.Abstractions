@@ -28,9 +28,24 @@ public class SomeClass
     }
 	
 	//Post
-    public async void PostCustomerAsync(CustomerDto customer) {
+    public async void CreateCustomerAsync(CustomerDto customer) {
         var result = await _client.PostAsync<CustomerDto,object>("customers",customer);
         //handle result...
+    }
+    
+    //Put
+    public async void ReplaceCustomerAsync(CustomerUpdateDto customer) {
+        var result = await _client.PutAsync<CustomerUpdateDto,object>($"customers/{customer.id}",customer);
+    }
+    
+    //Patch
+	public async void UpdateCustomerAsync(CustomerPatchDoc patchDoc) {
+        var result = await _client.PatchAsync<CustomerPatchDoc,object>($"customers/{patchDoc.id}", patchDoc);
+    }
+    
+    //Delete
+    public async void RemoveCustomerAsync(CustomerDto customer) {
+        var result = await _client.DeleteAsync<object>($"customers/{customer.id}");
     }
 }
 ```
