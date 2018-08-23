@@ -160,3 +160,5 @@ $RECYCLE.BIN/
 # Mac desktop service store files
 .DS_Store
 packages/
+/src/.vs/HttpClient.Abstractions/v15/Server/sqlite3
+/src/TestProject

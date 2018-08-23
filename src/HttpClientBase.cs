@@ -1,92 +1,113 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Net.Http.Headers;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+using Http.Abstractions.Serialization;
 
 namespace Http.Abstractions
 {
-    public class HttpClientBase : HttpClient, IHttpClient
+    public class HttpClientBase : IHttpClient
     {
+        private readonly HttpClient _client;
+
+        public ISerialize Serializer { get; set; }
             
-        public HttpClientBase(string baseAddress = null)
+        public HttpClientBase()
         {
-            if(!string.IsNullOrEmpty(baseAddress))
-                BaseAddress = new Uri(baseAddress);
+            _client = new HttpClient();
+            Serializer = new HttpClientSerialization();
         }
 
-        public HttpClientBase(string baseAddress, IEnumerable<MediaTypeWithQualityHeaderValue> headers = null) : this(baseAddress)
+        public string BaseAddress
         {
-            headers?.ToList().ForEach(h => DefaultRequestHeaders.Accept.Add(h));
-        }
-
-        public virtual async Task<TResult> GetAsync<TResult>(string requestUri)
-        {
-            return await HandleHttp<TResult>(async () =>
+            get => _client.BaseAddress.ToString();
+            set
             {
-                return await GetAsync(requestUri);
+                if (_client == null) return;
+                if(value != null && Uri.CheckSchemeName(new Uri(value).Scheme))
+                    _client.BaseAddress = new Uri(value);
+            }
+        }
+
+        public virtual async Task<IHttpResult<T>> GetAsync<T>(string requestUri)
+        {
+            return await HandleHttp<T>(async () => await _client.GetAsync(requestUri));
+        }
+       
+        public virtual async Task<IHttpResult> PostAsync<TContent>(string requestUri, TContent content)
+        {
+            return await HandleHttp(async () =>
+            {
+                var serialized = Serializer.SerializeContent(content);
+                return await _client.PostAsync(requestUri, new StringContent(serialized));
             });
         }
-        
-        public virtual async Task<TResult> PostAsync<TContent, TResult>(string requestUri, TContent content)
-        {
-            return await HandleHttp<TResult>(async () =>
-            {
-                var serialized = JsonConvert.SerializeObject(content);
-                return await PostAsync(requestUri, new StringContent(serialized));
-            });
-        }
 
-        public virtual async Task<TResult> PutAsync<TContent, TResult>(string requestUri, TContent content)
+        public virtual async Task<IHttpResult> PutAsync<TContent>(string requestUri, TContent content)
         {
-            return await HandleHttp<TResult>(async () =>
+            return await HandleHttp(async () =>
             {
-                var serialized = JsonConvert.SerializeObject(content);
-                return await PutAsync(requestUri, new StringContent(serialized));
+                var serialized = Serializer.SerializeContent(content);
+                return await _client.PutAsync(requestUri, new StringContent(serialized));
             });            
         }
 
-        public virtual async Task<TResult> PatchAsync<TContent, TResult>(string requestUri, TContent content)
+        public virtual async Task<IHttpResult> PatchAsync<TContent>(string requestUri, TContent content)
         {
-            return await HandleHttp<TResult>(async () =>
+            return await HandleHttp(async () =>
             {
-                var serialized = JsonConvert.SerializeObject(content);
+                var serialized = Serializer.SerializeContent(content);
                 var request = new HttpRequestMessage(new HttpMethod("PATCH"), requestUri)
                 {
                     Content = new StringContent(serialized)
                 };
 
-                return await SendAsync(request);
+                return await _client.SendAsync(request);
             });           
         }
 
-        public virtual async Task<TResult> DeleteAsync<TResult>(string requestUri)
+        public virtual async Task<IHttpResult> DeleteAsync(string requestUri)
         {
-            return await HandleHttp<TResult>(async () =>
-            {
-                return await DeleteAsync(requestUri);
-            });
+            return await HandleHttp(async () => await _client.DeleteAsync(requestUri));
         }
                    
-        protected virtual async Task<TResult> HandleHttp<TResult>(Func<Task<HttpResponseMessage>> func)
+        protected virtual async Task<IHttpResult> HandleHttp(Func<Task<HttpResponseMessage>> func)
         {
-            TResult result;
             try
             {
                 var httpTask = await func();
-                result = await httpTask.Content.ReadAsStringAsync()
-                    .ContinueWith(t => JsonConvert.DeserializeObject<TResult>(t.Result));
+                var result = new HttpResultBase
+                {
+                    StatusCode = (int)httpTask.StatusCode,
+                    IsSuccessfull = httpTask.IsSuccessStatusCode
+                };
+
+                if (httpTask.IsSuccessStatusCode)
+                    result.Content = await httpTask.Content.ReadAsStringAsync();
+
+                return result;
             }
             catch(Exception ex)
             {
                 throw new HttpClientException($"{nameof(HandleHttp)} caught an unexpected excpetion", ex);
             }
-            return result;
         }
 
+        protected virtual async Task<IHttpResult<T>> HandleHttp<T>(Func<Task<HttpResponseMessage>> func)
+        {
+            var httpResult = await HandleHttp(func);
+            var result = new HttpResultBase<T>
+            {
+                IsSuccessfull = httpResult.IsSuccessfull,
+                StatusCode = httpResult.StatusCode
+            };
+            if (httpResult.IsSuccessfull)
+                result.Content = Serializer.DeserializeContent<T>(httpResult.Content.ToString());
+
+            return result;
+        }
 
     }
 }

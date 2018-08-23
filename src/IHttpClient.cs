@@ -1,19 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net.Http;
+﻿using System.Threading.Tasks;
 
 
 namespace Http.Abstractions
 {
     public interface IHttpClient
     {
-        Task<TResult> GetAsync<TResult>(string requestUri);
-        Task<TResult> PostAsync<TContent, TResult>(string requestUri, TContent content);
-        Task<TResult> PutAsync<TContent, TResult>(string requestUri, TContent content);
-        Task<TResult> PatchAsync<TContent, TResult>(string requestUri, TContent content);
-        Task<TResult> DeleteAsync<TResult>(string requestUri);
+        Task<IHttpResult<TResult>> GetAsync<TResult>(string requestUri);
+        Task<IHttpResult> PostAsync<TContent>(string requestUri, TContent content);
+        Task<IHttpResult> PutAsync<TContent>(string requestUri, TContent content);
+        Task<IHttpResult> PatchAsync<TContent>(string requestUri, TContent content);
+        Task<IHttpResult> DeleteAsync(string requestUri);
     }
 }
