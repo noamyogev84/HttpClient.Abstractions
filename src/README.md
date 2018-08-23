@@ -30,23 +30,23 @@ public class HttpClientConsumer
 	
 	//Post
     public async void CreateCustomerAsync(CustomerDto customer) {
-        IHttpResult result = await _client.PostAsync<CustomerDto,object>("customers",customer);
+        IHttpResult result = await _client.PostAsync<CustomerDto>("customers",customer);
         //handle result...
     }
     
     //Put
     public async void ReplaceCustomerAsync(CustomerUpdateDto customer) {
-        IHttpResult result = await _client.PutAsync<CustomerUpdateDto,object>($"customers/{customer.id}",customer);
+        IHttpResult result = await _client.PutAsync<CustomerUpdateDto>($"customers/{customer.id}",customer);
     }
     
     //Patch
 	public async void UpdateCustomerAsync(CustomerPatchDoc patchDoc) {
-        IHttpResult result = await _client.PatchAsync<CustomerPatchDoc,object>($"customers/{patchDoc.id}", patchDoc);
+        IHttpResult result = await _client.PatchAsync<CustomerPatchDoc>($"customers/{patchDoc.id}", patchDoc);
     }
     
     //Delete
     public async void RemoveCustomerAsync(CustomerDto customer) {
-        IHttpResult result = await _client.DeleteAsync<object>($"customers/{customer.id}");
+        IHttpResult result = await _client.DeleteAsync($"customers/{customer.id}");
     }
 }
 ```
