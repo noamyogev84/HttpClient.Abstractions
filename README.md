@@ -11,41 +11,42 @@
 # Examples
 
 ```csharp
-public class SomeClass
+public class HttpClientConsumer
 {
     public string BaseUrl { get; set; }
     private IHttpClient _client;
     
     [importing constructor]
-    public SomeClass(IHttpClient client) {
+    public HttpClientConsumer(IHttpClient client) {
         _client = client;
-        client.BaseAddress = BaseUrl;
+        _client.BaseAddress = BaseUrl;
     }
     
     //Get   
     public async IEnumerable<CustomrerDto> GetCustomersAsync() {
-        return await _client.GetAsync<IEnumerable<CustomerDto>>("customers");
+        IHttpResult result = await _client.GetAsync<IEnumerable<CustomerDto>>("customers");
+		return result.Content;
     }
 	
 	//Post
     public async void CreateCustomerAsync(CustomerDto customer) {
-        var result = await _client.PostAsync<CustomerDto,object>("customers",customer);
+        IHttpResult result = await _client.PostAsync<CustomerDto>("customers",customer);
         //handle result...
     }
     
     //Put
     public async void ReplaceCustomerAsync(CustomerUpdateDto customer) {
-        var result = await _client.PutAsync<CustomerUpdateDto,object>($"customers/{customer.id}",customer);
+        IHttpResult result = await _client.PutAsync<CustomerUpdateDto>($"customers/{customer.id}",customer);
     }
     
     //Patch
 	public async void UpdateCustomerAsync(CustomerPatchDoc patchDoc) {
-        var result = await _client.PatchAsync<CustomerPatchDoc,object>($"customers/{patchDoc.id}", patchDoc);
+        IHttpResult result = await _client.PatchAsync<CustomerPatchDoc>($"customers/{patchDoc.id}", patchDoc);
     }
     
     //Delete
     public async void RemoveCustomerAsync(CustomerDto customer) {
-        var result = await _client.DeleteAsync<object>($"customers/{customer.id}");
+        IHttpResult result = await _client.DeleteAsync($"customers/{customer.id}");
     }
 }
 ```
